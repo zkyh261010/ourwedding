@@ -134,24 +134,27 @@
     if (CONFIG.useCurtain === false) {
       curtain.style.display = 'none';
       initFallingLeaves();
-      // 커튼 없는 경우 첫 사용자 인터랙션 시 음악 재생
-      const startMusicOnce = () => {
-        playMusic();
+      // 커튼 없는 경우: 첫 터치/클릭에 unlock 후 재생
+      const startMusicOnce = (e) => {
+        unlockAudioContext();
+        setTimeout(() => playMusic(), 80);
+        document.removeEventListener('touchend', startMusicOnce);
         document.removeEventListener('click', startMusicOnce);
-        document.removeEventListener('touchstart', startMusicOnce);
       };
+      document.addEventListener('touchend', startMusicOnce, { passive: true });
       document.addEventListener('click', startMusicOnce);
-      document.addEventListener('touchstart', startMusicOnce, { passive: true });
       return;
     }
 
     namesEl.textContent = `${CONFIG.groom.name}  &  ${CONFIG.bride.name}`;
 
     btn.addEventListener('click', () => {
+      // iOS Safari Audio unlock: 터치 이벤트 핸들러 안에서 즉시 실행
+      unlockAudioContext();
       curtain.classList.add('is-open');
       document.body.classList.remove('no-scroll');
-      // 사용자 인터랙션 직후 음악 자동재생
-      playMusic();
+      // unlock 직후 재생 (약간의 딜레이로 unlock 완료 대기)
+      setTimeout(() => playMusic(), 80);
       setTimeout(() => {
         curtain.classList.add('is-hidden');
         initFallingLeaves();
@@ -754,6 +757,7 @@
      ═══════════════════════════════════════════ */
 
   let musicAudio = null;
+  let audioUnlocked = false;
 
   function initMusic() {
     if (!CONFIG.music || !CONFIG.music.useMusic) return;
@@ -763,6 +767,9 @@
     musicAudio.loop = CONFIG.music.loop !== false;
     musicAudio.volume = typeof CONFIG.music.volume === 'number' ? CONFIG.music.volume : 0.5;
     musicAudio.preload = 'auto';
+
+    // iOS Safari: muted 속성으로 preload 허용
+    musicAudio.muted = false;
 
     musicAudio.addEventListener('error', () => {
       const btn = $('#musicBtn');
@@ -777,6 +784,21 @@
     btn.innerHTML = getMusicIcon(false);
     btn.addEventListener('click', toggleMusic);
     document.body.appendChild(btn);
+  }
+
+  // iOS Safari Audio unlock: 사용자 터치 이벤트 핸들러 내에서
+  // 짧게 play→pause 하면 Audio 컨텍스트가 unlock됨
+  function unlockAudioContext() {
+    if (audioUnlocked || !musicAudio) return;
+    audioUnlocked = true;
+    // 볼륨 0으로 잠깐 play→pause → iOS 오디오 컨텍스트 열기
+    const prevVolume = musicAudio.volume;
+    musicAudio.volume = 0;
+    musicAudio.play().then(() => {
+      musicAudio.pause();
+      musicAudio.currentTime = 0;
+      musicAudio.volume = prevVolume;
+    }).catch(() => {});
   }
 
   function getMusicIcon(playing) {
@@ -799,7 +821,10 @@
     const btn = $('#musicBtn');
     musicAudio.play().then(() => {
       if (btn) { btn.innerHTML = getMusicIcon(true); btn.classList.add('is-playing'); }
-    }).catch(() => {});
+    }).catch(() => {
+      // 실패 시 버튼은 재생 전 상태 유지 (사용자가 수동으로 누를 수 있음)
+      if (btn) { btn.innerHTML = getMusicIcon(false); btn.classList.remove('is-playing'); }
+    });
   }
 
   function toggleMusic() {
