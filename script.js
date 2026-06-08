@@ -134,6 +134,14 @@
     if (CONFIG.useCurtain === false) {
       curtain.style.display = 'none';
       initFallingLeaves();
+      // 커튼 없는 경우 첫 사용자 인터랙션 시 음악 재생
+      const startMusicOnce = () => {
+        playMusic();
+        document.removeEventListener('click', startMusicOnce);
+        document.removeEventListener('touchstart', startMusicOnce);
+      };
+      document.addEventListener('click', startMusicOnce);
+      document.addEventListener('touchstart', startMusicOnce, { passive: true });
       return;
     }
 
@@ -142,6 +150,8 @@
     btn.addEventListener('click', () => {
       curtain.classList.add('is-open');
       document.body.classList.remove('no-scroll');
+      // 사용자 인터랙션 직후 음악 자동재생
+      playMusic();
       setTimeout(() => {
         curtain.classList.add('is-hidden');
         initFallingLeaves();
@@ -740,11 +750,78 @@
   }
 
   /* ═══════════════════════════════════════════
+     Music Player
+     ═══════════════════════════════════════════ */
+
+  let musicAudio = null;
+
+  function initMusic() {
+    if (!CONFIG.music || !CONFIG.music.useMusic) return;
+
+    musicAudio = new Audio();
+    musicAudio.src = CONFIG.music.path;
+    musicAudio.loop = CONFIG.music.loop !== false;
+    musicAudio.volume = typeof CONFIG.music.volume === 'number' ? CONFIG.music.volume : 0.5;
+    musicAudio.preload = 'auto';
+
+    musicAudio.addEventListener('error', () => {
+      const btn = $('#musicBtn');
+      if (btn) btn.style.display = 'none';
+    });
+
+    // 플로팅 음악 버튼 생성
+    const btn = document.createElement('button');
+    btn.id = 'musicBtn';
+    btn.className = 'music-btn';
+    btn.setAttribute('aria-label', '음악 재생/일시정지');
+    btn.innerHTML = getMusicIcon(false);
+    btn.addEventListener('click', toggleMusic);
+    document.body.appendChild(btn);
+  }
+
+  function getMusicIcon(playing) {
+    if (playing) {
+      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="6" y="4" width="4" height="16" rx="1"/>
+        <rect x="14" y="4" width="4" height="16" rx="1"/>
+      </svg>`;
+    } else {
+      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18V6l12-2v12"/>
+        <circle cx="6" cy="18" r="3"/>
+        <circle cx="18" cy="16" r="3"/>
+      </svg>`;
+    }
+  }
+
+  function playMusic() {
+    if (!musicAudio) return;
+    const btn = $('#musicBtn');
+    musicAudio.play().then(() => {
+      if (btn) { btn.innerHTML = getMusicIcon(true); btn.classList.add('is-playing'); }
+    }).catch(() => {});
+  }
+
+  function toggleMusic() {
+    if (!musicAudio) return;
+    const btn = $('#musicBtn');
+    if (musicAudio.paused) {
+      musicAudio.play().then(() => {
+        if (btn) { btn.innerHTML = getMusicIcon(true); btn.classList.add('is-playing'); }
+      }).catch(() => {});
+    } else {
+      musicAudio.pause();
+      if (btn) { btn.innerHTML = getMusicIcon(false); btn.classList.remove('is-playing'); }
+    }
+  }
+
+  /* ═══════════════════════════════════════════
      Init
      ═══════════════════════════════════════════ */
 
   async function init() {
     setMetaTags();
+    initMusic();
     initCurtain();
     initHero();
     initCountdown();

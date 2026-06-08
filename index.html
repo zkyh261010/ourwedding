@@ -21,6 +21,45 @@
 
   <link rel="stylesheet" href="styles.css">
   <script src="config.js"></script>
+  <style>
+    /* ── Music Player Button ── */
+    .music-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      z-index: 9000;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(139, 158, 126, 0.6);
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #4a5e3b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(74, 94, 59, 0.18);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    .music-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 20px rgba(74, 94, 59, 0.25);
+    }
+    .music-btn:active {
+      transform: scale(0.95);
+    }
+    .music-btn.is-playing {
+      background: rgba(139, 158, 126, 0.92);
+      color: #fff;
+      animation: music-pulse 2s ease-in-out infinite;
+    }
+    @keyframes music-pulse {
+      0%, 100% { box-shadow: 0 4px 16px rgba(74, 94, 59, 0.2); }
+      50%       { box-shadow: 0 4px 24px rgba(74, 94, 59, 0.45); }
+    }
+  </style>
 </head>
 <body>
 

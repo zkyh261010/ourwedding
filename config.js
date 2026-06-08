@@ -77,6 +77,16 @@ const CONFIG = {
     ]
   },
 
+  // ── 배경 음악 ──
+  // music/1.mp3 파일을 해당 경로에 넣으면 자동 재생됩니다.
+  // useMusic: false 로 설정하면 음악 기능을 비활성화합니다.
+  music: {
+    useMusic: true,
+    path: "music/1.mp3",   // 음악 파일 경로 (mp3, ogg, wav 지원)
+    loop: true,            // 반복 재생 여부
+    volume: 0.5            // 볼륨 (0.0 ~ 1.0)
+  },
+
   // ── 링크 공유 시 나타나는 문구 ──
   meta: {
     title: "전윤호 ♥ 김수진 결혼합니다",
